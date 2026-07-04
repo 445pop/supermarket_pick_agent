@@ -1,0 +1,2 @@
+"""Supermarket pick agent package."""
+

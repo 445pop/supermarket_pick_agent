@@ -1,0 +1,38 @@
+[
+  {
+    "product_id": "mineral_water",
+    "display_name": "矿泉水",
+    "aliases": ["矿泉水", "水", "瓶装水", "喝的", "water", "bottle water", "mineral water"],
+    "category": "drink",
+    "stock": 12,
+    "shelf_id": "shelf_a",
+    "approach_point": "water_shelf_approach",
+    "delivery_point": "delivery_point",
+    "appearance": "clear plastic bottle with blue label",
+    "vla_skill": "water_bottle_grasp_pi05",
+    "vla_endpoint": "https://vla.example.com/water-bottle-grasp",
+    "grasp_prompt": "grasp the water bottle by the middle body",
+    "place_vla_skill": "delivery_area_place_pi05",
+    "place_vla_endpoint": "https://vla.example.com/delivery-area-place",
+    "place_prompt": "place the water bottle on the delivery area",
+    "max_retry": 2
+  },
+  {
+    "product_id": "instant_noodle",
+    "display_name": "方便面",
+    "aliases": ["方便面", "泡面", "面", "吃的", "noodle", "instant noodle", "instant noodles", "ramen"],
+    "category": "food",
+    "stock": 8,
+    "shelf_id": "shelf_b",
+    "approach_point": "noodle_shelf_approach",
+    "delivery_point": "delivery_point",
+    "appearance": "instant noodle package on shelf",
+    "vla_skill": "instant_noodle_grasp_pi05",
+    "vla_endpoint": "https://vla.example.com/instant-noodle-grasp",
+    "grasp_prompt": "grasp the instant noodle package carefully from the stable side",
+    "place_vla_skill": "delivery_area_place_pi05",
+    "place_vla_endpoint": "https://vla.example.com/delivery-area-place",
+    "place_prompt": "place the instant noodle package flat on the delivery area",
+    "max_retry": 2
+  }
+]

@@ -2,7 +2,7 @@
 
 面向“小场景、有限物体类别、半结构化货架环境”的超市取货 Agent 项目。
 - 上层用 ReAct Agent 做任务理解、工具调用、状态推进和失败恢复。
-- 商品信息来自受控商品数据库，不让 Agent 自由编写 SQL 或编造货架位置。
+- 商品信息来自受控商品数据库。
 - 导航模块负责移动到货架接近点和交付点。
 - 到达货架后，按商品目录调用对应远端 VLA 模型服务生成动作 chunk。
 - 矿泉水和方便面不是同一个 VLA endpoint 临时换 prompt，而是绑定不同 VLA 技能和远端接口。
@@ -39,7 +39,7 @@ supermarket_pick_agent/
 
 ## 快速运行
 
-默认使用 mock 导航、mock VLA、mock VLM，不需要真实机器人和远端服务。
+默认使用 mock 导航、mock VLA、mock VLM。
 
 ```bash
 cd C:\Users\LENOVO\Desktop\supermarket_pick_agent

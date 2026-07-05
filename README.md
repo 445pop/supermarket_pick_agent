@@ -2,7 +2,7 @@
 ## 演示视频
 
 ![Demo](demo.gif)
-> 完整视频见仓库根目录的 `pick_cup.mp4`，clone 后本地播放。
+
 
 # Supermarket Pick Agent
 

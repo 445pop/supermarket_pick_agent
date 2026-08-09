@@ -10,10 +10,10 @@
     "delivery_point": "delivery_point",
     "appearance": "clear plastic bottle with blue label",
     "vla_skill": "water_bottle_grasp_pi05",
-    "vla_endpoint": "https://vla.example.com/water-bottle-grasp",
+    "vla_endpoint": "vla://water-bottle-grasp",
     "grasp_prompt": "grasp the water bottle by the middle body",
     "place_vla_skill": "delivery_area_place_pi05",
-    "place_vla_endpoint": "https://vla.example.com/delivery-area-place",
+    "place_vla_endpoint": "vla://delivery-area-place",
     "place_prompt": "place the water bottle on the delivery area",
     "max_retry": 2
   },
@@ -28,10 +28,10 @@
     "delivery_point": "delivery_point",
     "appearance": "instant noodle package on shelf",
     "vla_skill": "instant_noodle_grasp_pi05",
-    "vla_endpoint": "https://vla.example.com/instant-noodle-grasp",
+    "vla_endpoint": "vla://instant-noodle-grasp",
     "grasp_prompt": "grasp the instant noodle package carefully from the stable side",
     "place_vla_skill": "delivery_area_place_pi05",
-    "place_vla_endpoint": "https://vla.example.com/delivery-area-place",
+    "place_vla_endpoint": "vla://delivery-area-place",
     "place_prompt": "place the instant noodle package flat on the delivery area",
     "max_retry": 2
   }

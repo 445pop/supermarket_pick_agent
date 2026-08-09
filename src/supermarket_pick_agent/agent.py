@@ -93,13 +93,31 @@ class SupermarketPickAgent:
                     },
                 )
             )
-            action = self.tools.call_product_vla_grasp(
-                product=product,
-                image_path=before_image,
-                robot_state=robot_state,
-                gripper_state=gripper_state,
-                failure_context=failure_context,
-            )
+            try:
+                action = self.tools.call_product_vla_grasp(
+                    product=product,
+                    image_path=before_image,
+                    robot_state=robot_state,
+                    gripper_state=gripper_state,
+                    failure_context=failure_context,
+                )
+            except RuntimeError as exc:
+                last_reason = str(exc)
+                history.append(
+                    Observation(
+                        source="vla_client",
+                        success=False,
+                        reason=last_reason,
+                        data={
+                            "attempt": attempt,
+                            "kind": "grasp",
+                            "product_id": product.product_id,
+                            "vla_skill": product.vla_skill,
+                            "vla_endpoint": product.vla_endpoint,
+                        },
+                    )
+                )
+                break
             execution = self.tools.execute_action_chunk(action)
             history.append(
                 Observation(
@@ -189,12 +207,28 @@ class SupermarketPickAgent:
                 },
             )
         )
-        action = self.tools.call_product_vla_place(
-            product=product,
-            image_path=image,
-            robot_state=robot_state,
-            gripper_state=gripper_state,
-        )
+        try:
+            action = self.tools.call_product_vla_place(
+                product=product,
+                image_path=image,
+                robot_state=robot_state,
+                gripper_state=gripper_state,
+            )
+        except RuntimeError as exc:
+            history.append(
+                Observation(
+                    source="vla_client",
+                    success=False,
+                    reason=str(exc),
+                    data={
+                        "kind": "place",
+                        "product_id": product.product_id,
+                        "vla_skill": product.place_vla_skill,
+                        "vla_endpoint": product.place_vla_endpoint,
+                    },
+                )
+            )
+            return False
         execution = self.tools.execute_action_chunk(action)
         history.append(
             Observation(

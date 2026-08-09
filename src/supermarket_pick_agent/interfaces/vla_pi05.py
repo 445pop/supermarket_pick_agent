@@ -1,11 +1,18 @@
 from __future__ import annotations
 
 import json
+from json import JSONDecodeError
+from urllib.parse import urljoin
+from urllib.error import URLError
 import urllib.request
 from dataclasses import asdict
 from typing import Protocol
 
 from ..models import ActionKind, GripperState, RobotState, VLAActionChunk
+
+
+class VLAClientError(RuntimeError):
+    pass
 
 
 class Pi05VLAClient(Protocol):
@@ -25,7 +32,7 @@ class Pi05VLAClient(Protocol):
         """Generate a short action chunk with a product-bound pi0.5/VLA skill."""
 
 
-class MockPi05VLAClient:
+class LocalPi05VLAClient:
     def generate_action_chunk(
         self,
         *,
@@ -52,7 +59,7 @@ class MockPi05VLAClient:
             steps=steps,
             gripper_commands=gripper_commands,
             metadata={
-                "mode": "mock",
+                "mode": "local_adapter",
                 "skill": skill,
                 "endpoint": endpoint,
                 "fixed_prompt": prompt,
@@ -88,14 +95,29 @@ class HttpPi05VLAClient:
             "fixed_prompt": prompt,
             "failure_context": failure_context or {},
         }
+        target_endpoint = self._resolve_endpoint(endpoint)
         request = urllib.request.Request(
-            endpoint or self.default_endpoint,
+            target_endpoint,
             data=json.dumps(payload).encode("utf-8"),
             headers={"Content-Type": "application/json"},
             method="POST",
         )
-        with urllib.request.urlopen(request, timeout=self.timeout_s) as response:
-            body = json.loads(response.read().decode("utf-8"))
+        try:
+            with urllib.request.urlopen(request, timeout=self.timeout_s) as response:
+                body = json.loads(response.read().decode("utf-8"))
+        except JSONDecodeError as exc:
+            raise VLAClientError("vla_response_invalid_json") from exc
+        except (TimeoutError, URLError, OSError) as exc:
+            raise VLAClientError(f"vla_request_failed:{type(exc).__name__}") from exc
+
+        if not isinstance(body, dict):
+            raise VLAClientError("vla_response_invalid_schema")
+        if "steps" not in body:
+            raise VLAClientError("vla_response_missing_steps")
+        if not isinstance(body["steps"], list):
+            raise VLAClientError("vla_response_steps_not_list")
+        if "gripper_commands" in body and not isinstance(body["gripper_commands"], list):
+            raise VLAClientError("vla_response_gripper_commands_not_list")
 
         return VLAActionChunk(
             kind=kind,
@@ -103,8 +125,18 @@ class HttpPi05VLAClient:
             gripper_commands=body.get("gripper_commands", []),
             metadata={
                 "skill": skill,
-                "endpoint": endpoint or self.default_endpoint,
+                "endpoint": target_endpoint,
                 "fixed_prompt": prompt,
                 **body.get("metadata", {}),
             },
         )
+
+    def _resolve_endpoint(self, endpoint: str) -> str:
+        if not endpoint:
+            return self.default_endpoint
+        if endpoint.startswith(("http://", "https://")):
+            return endpoint
+        if endpoint.startswith("vla://"):
+            skill_path = endpoint.removeprefix("vla://").strip("/")
+            return urljoin(self.default_endpoint.rstrip("/") + "/", f"v1/skills/{skill_path}")
+        return urljoin(self.default_endpoint.rstrip("/") + "/", endpoint.lstrip("/"))

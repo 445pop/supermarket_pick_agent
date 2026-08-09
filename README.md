@@ -1,18 +1,19 @@
-
-## 演示视频
-
-![Demo](demo.gif)
-
-
 # Supermarket Pick Agent
 
-面向“有限物体类别、半结构化货架环境”的超市取货 Agent 项目。
+这是一个面向“小场景、有限物体类别、半结构化货架环境”的超市取货 Agent 工程框架。项目口径与桌面 HTML 文档里的“超市取货 Agent 项目介绍与面试问答”一致：
+
 - 上层用 ReAct Agent 做任务理解、工具调用、状态推进和失败恢复。
-- 商品信息来自受控商品数据库。
+- 商品信息来自受控商品数据库，不让 Agent 自由编写 SQL 或编造货架位置。
 - 导航模块负责移动到货架接近点和交付点。
 - 到达货架后，按商品目录调用对应远端 VLA 模型服务生成动作 chunk。
 - 矿泉水和方便面不是同一个 VLA endpoint 临时换 prompt，而是绑定不同 VLA 技能和远端接口。
 - OpenAI/VLM verifier 只做语义验收，安全控制由执行器和机器人控制层负责。
+
+## 运行效果
+
+![Task overview](task.gif)
+
+
 
 ## 目录
 
@@ -39,16 +40,18 @@ supermarket_pick_agent/
 
 ## 快速运行
 
-默认使用 mock 导航、mock VLA、mock VLM。
+默认使用本地适配器完成一次端到端流程检查，不需要真实机器人和远端服务；接入真实模块时可通过环境变量切换到 HTTP/VLM 服务。
 
 ```bash
 cd C:\Users\LENOVO\Desktop\supermarket_pick_agent
 python -m venv .venv
 .venv\Scripts\activate
 pip install -r requirements.txt
-python -m src.supermarket_pick_agent.main
-python -m src.supermarket_pick_agent.main mineral_water
-python -m src.supermarket_pick_agent.main instant_noodle
+pip install -e .
+python -m supermarket_pick_agent.main
+python -m supermarket_pick_agent.main mineral_water
+python -m supermarket_pick_agent.main instant_noodle
+supermarket-pick-agent mineral_water
 ```
 
 输出是完整任务结果 JSON，包含 product、status、reason 和每一步 Observation history。
@@ -84,25 +87,25 @@ python -m src.supermarket_pick_agent.main instant_noodle
 {
   "product_id": "mineral_water",
   "vla_skill": "water_bottle_grasp_pi05",
-  "vla_endpoint": "https://vla.example.com/water-bottle-grasp",
+  "vla_endpoint": "vla://water-bottle-grasp",
   "grasp_prompt": "grasp the water bottle by the middle body"
 }
 ```
 
-当前示例：
+当前商品路由：
 
-- `mineral_water` -> `water_bottle_grasp_pi05` -> `https://vla.example.com/water-bottle-grasp`
-- `instant_noodle` -> `instant_noodle_grasp_pi05` -> `https://vla.example.com/instant-noodle-grasp`
-- 放置动作统一走 `delivery_area_place_pi05` 示例 endpoint
+ - `mineral_water` -> `water_bottle_grasp_pi05` -> `vla://water-bottle-grasp`
+ - `instant_noodle` -> `instant_noodle_grasp_pi05` -> `vla://instant-noodle-grasp`
+ - 放置动作统一走 `delivery_area_place_pi05` endpoint
 
-真实接入时，把 `vla_endpoint` 和 `place_vla_endpoint` 换成你的 pi0.5/VLA 服务地址即可。
+真实接入时，把 `vla_endpoint` 和 `place_vla_endpoint` 换成实际 pi0.5/VLA 服务地址即可。
 
 ## 如何接真实模块
 
 1. 导航模块：实现或替换 `interfaces/navigation.py` 的 `HttpNavigationClient.navigate_to()`。
 2. VLA 模型服务：实现或替换 `interfaces/vla_pi05.py`。真实请求会把 `product_id`、`vla_skill`、`fixed_prompt`、图像路径、机器人状态、夹爪状态和失败上下文发给商品绑定的 endpoint。
 3. OpenAI/VLM 验收：配置 `.env` 里的 `OPENAI_API_KEY` 和 `OPENAI_VERIFIER_MODEL`，或替换 `interfaces/openai_verifier.py`。
-4. 机器人执行：替换 `robot/executor.py` 中的 mock 执行逻辑，接入 Aubo 和 RG75 控制接口。
+4. 机器人执行：替换 `robot/executor.py` 中的本地执行适配逻辑，接入 Aubo 和 RG75 控制接口。
 5. Observation 融合：当前在 `agent.py` 内融合 VLM、夹爪和 executor 状态。真实项目可以抽成独立 verifier/fusion 模块。
 
 ## 重要边界
@@ -125,18 +128,38 @@ python -m src.supermarket_pick_agent.main instant_noodle
 - 空抓或 VLM 判断失败：重新观察，并再次调用该商品绑定的 VLA endpoint。
 - 多次失败：超过 `max_retry` 后停止，保留失败 Observation。
 
+## 测试
+
+项目使用 `pytest` 覆盖商品查询、端到端本地流程、安全执行器和 HTTP 适配器异常处理：
+
+```bash
+pytest -q
+```
+
+发布前建议同时执行两条本地流程检查：
+
+```bash
+pip install -e .
+python -m supermarket_pick_agent.main mineral_water
+python -m supermarket_pick_agent.main instant_noodle
+supermarket-pick-agent mineral_water
+```
+
+如需保存任务结果，可以设置 `TASK_LOG_DIR=runs`。运行后会把完整 result JSON 写入该目录，便于复盘任务链路；`runs/` 默认不提交。
+
 ## 环境变量
 
 ```env
 OPENAI_API_KEY=
-OPENAI_VERIFIER_MODEL=gpt-5.5
+OPENAI_VERIFIER_MODEL=your-vlm-model
 PI05_ENDPOINT=http://127.0.0.1:8088/v1/action
 NAVIGATION_ENDPOINT=http://127.0.0.1:8090/v1/navigate
-USE_MOCKS=true
+USE_LOCAL_ADAPTERS=true
+TASK_LOG_DIR=
 ```
 
 说明：
 
-- `USE_MOCKS=true` 时，不调用真实导航、VLA 和 OpenAI。
-- `USE_MOCKS=false` 时，会调用 `HttpNavigationClient`、商品目录中的 VLA endpoint，以及 OpenAI/VLM verifier。
-- 如果真实平台没有 `gpt-5.5` 这个模型名，请把 `OPENAI_VERIFIER_MODEL` 改成实际可用模型。
+ - `USE_LOCAL_ADAPTERS=true` 时，使用本地适配器完成流程检查，不调用真实导航、VLA 和 OpenAI。
+ - `USE_LOCAL_ADAPTERS=false` 时，会调用 `HttpNavigationClient`、商品目录中的 VLA endpoint，以及 OpenAI/VLM verifier。
+ - 请把 `OPENAI_VERIFIER_MODEL` 配置为实际可用的多模态模型。

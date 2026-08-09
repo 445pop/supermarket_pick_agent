@@ -23,7 +23,7 @@ class VisionVerifier(Protocol):
         """Verify grasp/place result from images."""
 
 
-class MockVisionVerifier:
+class LocalVisionVerifier:
     def verify(
         self,
         *,
@@ -40,19 +40,19 @@ class MockVisionVerifier:
                 reason=f"{product.display_name} appears near the gripper",
                 target_visible_on_shelf=False,
                 target_in_gripper=True,
-                raw={"mode": "mock"},
+                raw={"mode": "local_adapter"},
             )
         return VerificationResult(
             success=True,
             confidence=0.93,
             reason=f"{product.display_name} appears in the delivery area",
             target_in_delivery_area=True,
-            raw={"mode": "mock"},
+            raw={"mode": "local_adapter"},
         )
 
 
 class OpenAIVisionVerifier:
-    def __init__(self, api_key: str, model: str = "gpt-5.5") -> None:
+    def __init__(self, api_key: str, model: str = "your-vlm-model") -> None:
         self.api_key = api_key
         self.model = model
 
@@ -135,4 +135,3 @@ def _parse_json_object(text: str) -> dict:
     if start == -1 or end == -1:
         raise ValueError(f"Verifier did not return JSON: {text}")
     return json.loads(text[start : end + 1])
-

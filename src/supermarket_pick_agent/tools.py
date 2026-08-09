@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-from pathlib import Path
-
 from .database import ProductDatabase
 from .interfaces.navigation import NavigationClient, NavigationTarget
+from .interfaces.observation import ObservationProvider
 from .interfaces.openai_verifier import VisionVerifier
 from .interfaces.vla_pi05 import Pi05VLAClient
 from .models import (
@@ -24,12 +23,14 @@ class AgentTools:
         *,
         product_db: ProductDatabase,
         navigation: NavigationClient,
+        observation_provider: ObservationProvider,
         vla: Pi05VLAClient,
         verifier: VisionVerifier,
         executor: SafetyExecutor,
     ) -> None:
         self.product_db = product_db
         self.navigation = navigation
+        self.observation_provider = observation_provider
         self.vla = vla
         self.verifier = verifier
         self.executor = executor
@@ -41,10 +42,7 @@ class AgentTools:
         return self.navigation.navigate_to(NavigationTarget(point=point))
 
     def capture_observation(self) -> tuple[str, RobotState, GripperState]:
-        image_path = str(Path(__file__).resolve().parents[2] / "data" / "mock_after.png")
-        robot_state = RobotState()
-        gripper_state = GripperState(width_mm=75.0, force=0.0)
-        return image_path, robot_state, gripper_state
+        return self.observation_provider.capture()
 
     def call_product_vla_grasp(
         self,

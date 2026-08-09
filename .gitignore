@@ -3,3 +3,10 @@ __pycache__/
 *.pyc
 .env
 
+.idea/
+.DS_Store
+*.log
+runs/
+runs_check/
+.pytest_cache/
+*.egg-info/
